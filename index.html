@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>保险体检 — 看清你的风险缺口</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --navy: #1e3a5f; --blue: #2d6a9f; --teal: #0d9488;
+  --red: #dc2626; --red-bg: #fef2f2; --amber: #d97706; --amber-bg: #fffbeb;
+  --green: #16a34a; --green-bg: #f0fdf4; --gray: #6b7280; --light: #f8fafc;
+  --border: #e2e8f0; --text: #1e293b; --text2: #475569;
+}
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--light); color: var(--text);
+  min-height: 100vh; max-width: 480px; margin: 0 auto;
+}
+.page { display: none; min-height: 100vh; }
+.page.active { display: flex; flex-direction: column; }
+
+/* 顶部进度条 */
+.top-bar {
+  position: sticky; top: 0; z-index: 10;
+  background: #fff; border-bottom: 1px solid var(--border);
+  padding: 12px 16px 10px;
+}
+.progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--blue), var(--teal)); transition: width 0.35s ease; }
+.top-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.top-step { font-size: 12px; color: var(--blue); font-weight: 600; }
+.top-hint { font-size: 12px; color: var(--gray); }
+
+/* 通用内容 */
+.content { flex: 1; padding: 24px 20px 20px; }
+.step-label { font-size: 12px; color: var(--blue); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 10px; }
+.q-tag { display: inline-block; background: var(--navy); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; font-weight: 600; }
+.q-title { font-size: 18px; font-weight: 700; line-height: 1.55; margin-bottom: 6px; }
+.q-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+
+/* 选项 */
+.options { display: flex; flex-direction: column; gap: 10px; }
+.opt { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.55; cursor: pointer; transition: border-color 0.15s, background 0.15s; display: flex; align-items: flex-start; gap: 12px; }
+.opt:active { background: #f1f5f9; }
+.opt.sel { border-color: var(--blue); background: #eff6ff; }
+.opt-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; font-weight: 700; transition: background 0.15s, border-color 0.15s; }
+.opt.sel .opt-dot { background: var(--blue); border-color: var(--blue); }
+
+/* 底部按钮 */
+.btn-wrap { padding: 0 20px 28px; }
+.btn-main { width: 100%; background: linear-gradient(135deg, var(--blue), var(--teal)); color: #fff; border: none; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.btn-main:disabled { background: var(--gray); opacity: 0.5; cursor: not-allowed; }
+.btn-main:not(:disabled):active { opacity: 0.85; }
+.btn-ghost { display: block; text-align: center; font-size: 13px; color: var(--gray); margin-top: 12px; cursor: pointer; padding: 4px; }
+
+/* 欢迎页 */
+.hero { background: linear-gradient(135deg, var(--navy) 0%, #1a4a7a 100%); color: #fff; padding: 36px 20px 28px; text-align: center; border-radius: 0 0 28px 28px; }
+.hero-icon { font-size: 52px; margin-bottom: 14px; }
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+.hero p { font-size: 14px; opacity: 0.88; line-height: 1.7; }
+.hero-note { background: rgba(255,255,255,0.14); border-radius: 10px; padding: 10px 14px; margin-top: 18px; font-size: 12.5px; line-height: 1.65; opacity: 0.9; }
+.features { padding: 20px; }
+.feat { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.feat:last-child { border-bottom: none; }
+.feat-ic { width: 36px; height: 36px; background: var(--light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.feat h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.feat p { font-size: 12px; color: var(--text2); }
+
+/* 报告页 */
+.rhdr { background: linear-gradient(135deg, var(--navy), #1a4a7a); color: #fff; padding: 24px 20px 18px; border-radius: 0 0 24px 24px; }
+.rhdr h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.rhdr p { font-size: 13px; opacity: 0.8; }
+.score-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.18); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 10px; }
+.rbody { padding: 20px; }
+.sec-tl { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 12px; padding-bottom: 7px; border-bottom: 2px solid var(--navy); display: flex; align-items: center; gap: 6px; }
+.risk-item { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; margin-bottom: 10px; }
+.ri-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ri-name { font-size: 14px; font-weight: 600; }
+.ri-lvl { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+.ri-h { background: var(--red-bg); color: var(--red); }
+.ri-m { background: var(--amber-bg); color: var(--amber); }
+.ri-l { background: var(--green-bg); color: var(--green); }
+.bar-bg { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 5px; border-radius: 3px; width: 0; transition: width 0.6s ease; }
+.ri-h .bar-fill { background: linear-gradient(90deg,#f87171,var(--red)); }
+.ri-m .bar-fill { background: linear-gradient(90deg,#fbbf24,var(--amber)); }
+.ri-l .bar-fill { background: linear-gradient(90deg,#4ade80,var(--green)); }
+.ri-reason { font-size: 11.5px; color: var(--text2); margin-top: 6px; }
+.gap-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.gtag { padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.g-p0 { background: var(--red-bg); color: var(--red); border: 1px solid #fecaca; }
+.g-p1 { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+.g-p2 { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+.gap-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.g-num { width: 24px; height: 24px; background: var(--navy); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.g-text { font-size: 13px; color: var(--text2); }
+.g-text strong { color: var(--text); }
+.rec-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; margin-bottom: 10px; }
+.rc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.rc-name { font-size: 14px; font-weight: 700; }
+.rc-prio { font-size: 11px; color: var(--blue); font-weight: 600; }
+.rc-desc { font-size: 12.5px; color: var(--text2); line-height: 1.65; margin-bottom: 5px; }
+.rc-reason { font-size: 11.5px; background: var(--light); border-radius: 6px; padding: 6px 10px; color: var(--text2); border-left: 3px solid var(--blue); line-height: 1.6; }
+.pbox { background: linear-gradient(135deg,#eff6ff,#f0fdf4); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 14px; }
+.prow { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+.prow.tot { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px; font-weight: 700; }
+.plbl { font-size: 13px; color: var(--text2); }
+.pval { font-size: 13px; color: var(--text); }
+.pval.big { font-size: 22px; color: var(--blue); font-weight: 700; }
+.ptip { font-size: 11.5px; color: var(--gray); margin-top: 8px; background: #fff; border-radius: 6px; padding: 6px 10px; }
+.warn-box { background: var(--amber-bg); border: 1px solid #fde68a; border-radius: 12px; padding: 13px 15px; margin-bottom: 10px; }
+.warn-box.red { background: var(--red-bg); border-color: #fecaca; }
+.warn-box h4 { font-size: 13px; font-weight: 700; color: var(--amber); margin-bottom: 5px; }
+.warn-box.red h4 { color: var(--red); }
+.warn-box p { font-size: 12.5px; color: #78350f; line-height: 1.65; }
+.warn-box.red p { color: #7f1d1d; }
+.comply { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; margin-bottom: 14px; }
+.comply p { font-size: 11.5px; color: var(--gray); line-height: 1.65; }
+.comply strong { color: var(--text2); }
+.brand-foot { text-align: center; font-size: 12px; color: var(--gray); margin-bottom: 14px; line-height: 1.5; }
+.brand-foot strong { color: var(--text2); }
+.act-row { display: flex; gap: 10px; padding: 0 20px 28px; }
+.act-reset { flex: 1; background: #fff; color: var(--navy); border: 1.5px solid var(--navy); border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.act-consult { flex: 1.4; background: linear-gradient(135deg,var(--blue),var(--teal)); color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* 处理中 */
+.center { text-align: center; padding-top: 80px; }
+.spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.proc-txt { font-size: 14px; color: var(--gray); }
+.check { width: 72px; height: 72px; background: linear-gradient(135deg,var(--teal),var(--blue)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 38px; margin: 0 auto 14px; animation: pop 0.4s ease; }
+@keyframes pop { 0%{transform:scale(0);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+/* 弹窗（联系卡片 / 生成器） */
+.modal-mask { display:none; position:fixed; inset:0; z-index:100; background:rgba(15,23,42,0.55); align-items:center; justify-content:center; padding:24px; }
+.modal-mask.show { display:flex; }
+.modal-card { background:#fff; border-radius:18px; width:100%; max-width:340px; padding:24px 22px; text-align:center; animation: mp 0.25s ease; }
+@keyframes mp { 0%{transform:scale(0.9);opacity:0} 100%{transform:scale(1);opacity:1} }
+.modal-title { font-size:18px; font-weight:700; color:var(--navy); margin-bottom:6px; }
+.modal-sub { font-size:12.5px; color:var(--text2); margin-bottom:18px; line-height:1.6; }
+.contact-box { background:var(--light); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
+.contact-lbl { font-size:12px; color:var(--gray); margin-bottom:5px; }
+.contact-val { font-size:24px; font-weight:700; color:var(--blue); letter-spacing:1px; }
+.modal-btn { display:block; width:100%; border-radius:12px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; text-decoration:none; margin-bottom:10px; box-sizing:border-box; }
+.modal-call { background:linear-gradient(135deg,var(--blue),var(--teal)); color:#fff; border:none; }
+.modal-copy { background:#fff; color:var(--navy); border:1.5px solid var(--navy); }
+.modal-wechat { background:#07c160; color:#fff; border:none; }
+.modal-close { display:block; width:100%; background:none; border:none; color:var(--gray); font-size:13px; padding:8px; cursor:pointer; margin-top:2px; }
+.modal-field-lbl { font-size:12px; color:var(--text2); text-align:left; margin-bottom:5px; display:block; }
+.modal-input { width:100%; box-sizing:border-box; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; margin-bottom:12px; outline:none; }
+.modal-input:focus { border-color:var(--blue); }
+.modal-result { width:100%; box-sizing:border-box; padding:12px; border:1px dashed var(--blue); border-radius:10px; font-size:11.5px; color:var(--blue); background:#eff6ff; margin-bottom:10px; word-break:break-all; }
+.modal-toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:rgba(15,23,42,0.9); color:#fff; padding:12px 22px; border-radius:10px; font-size:14px; z-index:200; opacity:0; transition:opacity 0.2s; pointer-events:none; }
+.modal-toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ======================== 欢迎页 ======================== -->
+<div id="p-welcome" class="page active">
+  <div class="hero">
+    <div class="hero-icon">🩺</div>
+    <h1>保险体检报告</h1>
+    <p>3分钟看清你的风险缺口<br>知道自己缺什么，才知道该买什么</p>
+    <div class="hero-note">
+      ⚠️ 本评估不卖保险，不推销产品<br>
+      仅基于您的实际情况提供客观风险分析
+    </div>
+  </div>
+  <div class="features">
+    <div class="feat"><div class="feat-ic">📊</div><div><h3>六维风险评估</h3><p>医疗、大病、意外、身故、养老、护理，全面覆盖</p></div></div>
+    <div class="feat"><div class="feat-ic">🎯</div><div><h3>缺口精准定位</h3><p>识别已有保障与真实风险之间的距离</p></div></div>
+    <div class="feat"><div class="feat-ic">💡</div><div><h3>配置优先级建议</h3><p>按紧迫程度排序，知道先买什么、后买什么</p></div></div>
+    <div class="feat"><div class="feat-ic">🔒</div><div><h3>客观 · 不焦虑营销</h3><p>没有话术，不制造紧迫感，不夸大风险</p></div></div>
+  </div>
+  <div class="btn-wrap" style="padding-top:4px">
+    <button class="btn-main" onclick="App.start()">开始评估（约3分钟）</button>
+    <button class="btn-ghost" onclick="App.openGen()">我是代理人 · 生成专属链接</button>
+    <button class="btn-ghost" onclick="App.about()">关于本工具</button>
+  </div>
+</div>
+
+<!-- ======================== 题目页（通用） ======================== -->
+<div id="p-q" class="page">
+  <div class="top-bar">
+    <div class="progress-track"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="top-meta">
+      <span class="top-step" id="step-lbl">第 1 题</span>
+      <span class="top-hint" id="hint-lbl">单选</span>
+    </div>
+  </div>
+  <div class="content">
+    <div class="step-label" id="sec-lbl">基础信息</div>
+    <div class="q-tag" id="q-tag">Step 1</div>
+    <div class="q-title" id="q-title"></div>
+    <div class="q-sub" id="q-sub"></div>
+    <div class="options" id="q-opts"></div>
+  </div>
+  <div class="btn-wrap">
+    <button class="btn-main" id="q-next" onclick="App.next()" disabled>下一步</button>
+    <button class="btn-ghost" id="q-back" onclick="App.back()">← 返回上一步</button>
+  </div>
+</div>
+
+<!-- ======================== 处理中 ======================== -->
+<div id="p-proc" class="page">
+  <div class="center">
+    <div class="check">✓</div>
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:6px">正在生成报告…</div>
+    <div class="proc-txt">正在分析您的风险数据，请稍候</div>
+  </div>
+</div>
+
+<!-- ======================== 报告页 ======================== -->
+<div id="p-report" class="page">
+  <div class="rhdr">
+    <h2>🩺 您的保险体检报告</h2>
+    <p id="r-sub">基于您提供的信息生成</p>
+    <div class="score-badge" id="r-badge">⏳ 评估中…</div>
+  </div>
+  <div class="rbody">
+    <div class="sec-tl">📊 六维风险评估</div>
+    <div id="risk-list"></div>
+    <div style="margin-top:20px">
+      <div class="sec-tl">🎯 核心保障缺口</div>
+      <div id="gap-tags" class="gap-wrap"></div>
+      <div id="gap-order"></div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="sec-tl">💡 配置建议（按优先级）</div>
+      <div id="rec-list"></div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="sec-tl">💰 年保费预估参考</div>
+      <div class="pbox" id="pbox"></div>
+    </div>
+    <div id="warn-list"></div>
+    <div class="comply">
+      <p><strong>重要提示：</strong>本报告基于您提供的信息生成，不构成投保建议或承保承诺。具体产品方案、责任范围、费率及承保结论以保险公司正式条款和核保结果为准。涉及健康告知、核保判断、理赔争议时，请咨询人工顾问。</p>
+    </div>
+    <div class="brand-foot" id="brand-foot"></div>
+  </div>
+  <div class="act-row">
+    <button class="act-reset" onclick="App.reset()">重新评估</button>
+    <button class="act-consult" onclick="App.consult()">预约人工顾问</button>
+  </div>
+</div>
+
+<!-- ======================== 联系卡片弹窗 ======================== -->
+<div class="modal-mask" id="contact-modal" onclick="App.closeModal()">
+  <div class="modal-card" id="contact-body" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- ======================== 生成专属链接弹窗 ======================== -->
+<div class="modal-mask" id="gen-modal" onclick="App.closeGen()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title">生成专属链接</div>
+    <div class="modal-sub">填好你的联系方式，生成专属链接发给客户<br>客户报告里显示的就是你的信息</div>
+    <label class="modal-field-lbl">昵称 / 姓名（选填）</label>
+    <input class="modal-input" id="g-agent" placeholder="如：张经理">
+    <label class="modal-field-lbl">手机号</label>
+    <input class="modal-input" id="g-phone" placeholder="如：15910696585" inputmode="numeric">
+    <label class="modal-field-lbl">微信号（选填）</label>
+    <input class="modal-input" id="g-wechat" placeholder="如：zhang_agent">
+    <button class="modal-btn modal-call" onclick="App.genLink()">🔗 生成专属链接</button>
+    <div id="g-result-wrap" style="display:none">
+      <input class="modal-result" id="g-result" readonly>
+      <button class="modal-btn modal-copy" onclick="App.copyLink()">📋 复制专属链接</button>
+    </div>
+    <button class="modal-close" onclick="App.closeGen()">关闭</button>
+  </div>
+</div>
+
+<div class="modal-toast" id="toast"></div>
+
+<script>
+// ================================================================
+// 题目配置
+// ================================================================
+const QS = [
+  { sec:'基础信息', title:'您的年龄大约在哪个区间？', sub:'不同年龄面临的风险差异很大', multi:false, opts:[
+    {v:'u30',l:'30岁以下'}, {v:'30-45',l:'30–45岁'}, {v:'40-55',l:'40–55岁'}, {v:'o50',l:'50岁以上'},
+  ]},
+  { sec:'基础信息', title:'您是家庭的主要经济支柱吗？', sub:'经济支柱意味着更大的责任和风险', multi:false, opts:[
+    {v:'yes',l:'是，家庭主要收入靠我'}, {v:'no',l:'不是，配偶或其他人收入更高'}, {v:'equal',l:'我与配偶收入相近，共同支撑'},
+  ]},
+  { sec:'财务与责任', title:'您的社保情况？', sub:'社保是基础保障，决定商业险的补缺方向', multi:false, opts:[
+    {v:'职工医保',l:'城镇职工医保（公司缴纳）'}, {v:'居民医保',l:'城乡居民医保（自己缴纳）'}, {v:'公费',l:'公费医疗'}, {v:'无',l:'没有社保'},
+  ]},
+  { sec:'财务与责任', title:'有房贷或其他大额负债吗？', sub:'负债意味着身故/失能风险更高', multi:false, opts:[
+    {v:'房贷高',l:'有房贷，余额较多'}, {v:'房贷低',l:'有房贷，余额较少'}, {v:'其他负债',l:'有其他负债（车贷/经营贷等）'}, {v:'无负债',l:'没有负债'},
+  ]},
+  { sec:'财务与责任', title:'有需要您承担经济责任的家人吗？', sub:'包括未成年子女、需赡养的父母等', multi:false, opts:[
+    {v:'子女',l:'有未成年子女需要抚养'}, {v:'父母',l:'有父母需要赡养'}, {v:'子女+父母',l:'子女+父母都需要'}, {v:'无',l:'暂时没有经济依赖的家人'},
+  ]},
+  { sec:'财务与责任', title:'家庭年收入大概在哪个区间？', sub:'保障类总保费建议不超过年收入15%', multi:false, opts:[
+    {v:'10万以下',l:'10万元以下'}, {v:'10-20万',l:'10–20万元'}, {v:'20-40万',l:'20–40万元'}, {v:'40万以上',l:'40万元以上'},
+  ]},
+  { sec:'已有保障', title:'有商业医疗险吗？（如百万医疗险）', sub:'医疗险报销住院费用，是保障的"地基"', multi:false, opts:[
+    {v:'有医疗',l:'有，正在续保中'}, {v:'已失效',l:'买过但已停效/断缴'}, {v:'无医疗',l:'没有买过'},
+  ]},
+  { sec:'已有保障', title:'有重疾险吗？', sub:'重疾险一次性给付，用于弥补大病期间的收入损失', multi:false, opts:[
+    {v:'有重疾高',l:'有，保额30万以上'}, {v:'有重疾低',l:'有，保额30万以下'}, {v:'无重疾',l:'没有买过'},
+  ]},
+  { sec:'已有保障', title:'有寿险或定期寿险吗？', sub:'定期寿险覆盖身故风险，尤其适合有房贷或家庭责任的人', multi:false, opts:[
+    {v:'有寿充足',l:'有，保障充足'}, {v:'有寿不足',l:'有，保障不足'}, {v:'无寿险',l:'没有买过'},
+  ]},
+  { sec:'已有保障', title:'有意外险吗？', sub:'意外险保费低、杠杆高，适合所有人', multi:false, opts:[
+    {v:'有意外',l:'有'}, {v:'无意外',l:'没有'},
+  ]},
+  { sec:'健康与职业', title:'最近体检有异常指标吗？', sub:'如实告知是投保的前提，异常不等于拒保', multi:true, opts:[
+    {v:'健康',l:'无明显异常，体检基本正常'}, {v:'三高',l:'高血压/高血糖/高血脂（控制稳定）'}, {v:'结节',l:'结节/息肉/囊肿等异常'}, {v:'既往',l:'有既往病史（心脑血管/肝肾等）'},
+  ]},
+  { sec:'健康与职业', title:'需要长期服药或持续治疗吗？', sub:'长期服药不一定是拒保，但必须如实告知', multi:false, opts:[
+    {v:'不服药',l:'不需要，正常生活'}, {v:'轻微',l:'有轻微慢性病，每天服药控制'}, {v:'需治疗',l:'有需持续治疗的疾病'},
+  ]},
+  { sec:'健康与职业', title:'您的工作/出行风险等级？', sub:'高风险职业需要专门的保险产品', multi:false, opts:[
+    {v:'低风险',l:'办公室内勤为主'}, {v:'中风险',l:'经常外出/驾车/出差'}, {v:'高风险',l:'体力劳动/高空/特种作业'},
+  ]},
+  { sec:'养老与预算', title:'离法定退休还有几年？', sub:'决定养老储备的紧迫程度', multi:false, opts:[
+    {v:'10年以上',l:'10年以上'}, {v:'5-10年',l:'5–10年'}, {v:'5年内/已退休',l:'5年以内或已退休'},
+  ]},
+  { sec:'养老与预算', title:'除了社保，有其他养老储备吗？', sub:'包括存款、理财、年金险、房产租金等', multi:false, opts:[
+    {v:'充足',l:'有较多储备（理财/年金/房产等）'}, {v:'少量',l:'有一些存款，但不多'}, {v:'无',l:'目前没有额外养老储备'},
+  ]},
+  { sec:'养老与预算', title:'您一年能承受多少保费支出？', sub:'保障类保费建议不超过年收入15%', multi:false, opts:[
+    {v:'3千以内',l:'3000元以内'}, {v:'3-8千',l:'3000–8000元'}, {v:'8千-1.5万',l:'8000–15000元'}, {v:'1.5万以上',l:'15000元以上'},
+  ]},
+];
+
+// ================================================================
+// 代理人配置（从 URL 参数读取，无参数用默认值）
+// ================================================================
+const CFG = (() => {
+  const p = new URLSearchParams(location.search);
+  return {
+    agent: p.get('agent') || '昆仑健康保险',
+    phone: p.get('phone') || '15910696585',
+    wechat: p.get('wechat') || '',
+  };
+})();
+
+// ================================================================
+// 状态
+// ================================================================
+const S = { step: 0, sel: {} };
+
+// ================================================================
+// App
+// ================================================================
+const App = {
+  start() { S.step = 0; S.sel = {}; App.showQ(0); },
+
+  showQ(n) {
+    const q = QS[n];
+    document.getElementById('prog').style.width = ((n+1)/QS.length*90)+'%';
+    document.getElementById('step-lbl').textContent = `第 ${n+1} / ${QS.length} 题`;
+    document.getElementById('hint-lbl').textContent = q.multi ? '可多选' : '单选';
+    document.getElementById('sec-lbl').textContent = q.sec;
+    document.getElementById('q-tag').textContent = `Step ${n+1}`;
+    document.getElementById('q-title').textContent = q.title;
+    document.getElementById('q-sub').textContent = q.sub;
+
+    const c = document.getElementById('q-opts');
+    c.innerHTML = '';
+    const sel = S.sel[n] || [];
+    q.opts.forEach((o,i) => {
+      const d = document.createElement('div');
+      d.className = 'opt' + (sel.includes(o.v) ? ' sel' : '');
+      d.innerHTML = `<div class="opt-dot">${sel.includes(o.v) ? '✓' : (i+1)}</div><span>${o.l}</span>`;
+      d.onclick = () => App.selOpt(n, q, o.v);
+      c.appendChild(d);
+    });
+
+    document.getElementById('q-next').disabled = sel.length === 0;
+    document.getElementById('q-back').style.visibility = n === 0 ? 'hidden' : 'visible';
+    App.show('p-q');
+  },
+
+  selOpt(n, q, v) {
+    if (q.multi) {
+      if (v === '健康') { S.sel[n] = ['健康']; }
+      else {
+        S.sel[n] = (S.sel[n]||[]).filter(x=>x!=='健康');
+        const a = S.sel[n].filter(x=>x!==v);
+        S.sel[n] = a.length===S.sel[n].length ? [...(S.sel[n]||[]),v] : a;
+        if (!S.sel[n].length) S.sel[n]=['健康'];
+      }
+    } else { S.sel[n] = [v]; }
+    App.showQ(n);
+  },
+
+  next() {
+    if (!S.sel[S.step]) return;
+    S.step++;
+    if (S.step >= QS.length) { App.process(); return; }
+    App.showQ(S.step);
+  },
+
+  back() { if (S.step > 0) { S.step--; App.showQ(S.step); } },
+
+  process() { App.show('p-proc'); setTimeout(()=>App.report(), 1600); },
+
+  report() {
+    const a = S.sel;
+    const has = v => v && v.length > 0;
+    const social = a[2]?.[0]||'', pillar = a[1]?.[0]||'', age = a[0]?.[0]||'';
+    const housing = a[3]?.[0]||'', dep = a[4]?.[0]||'', income = a[5]?.[0]||'';
+    const medi = a[6]?.[0]||'', crit = a[7]?.[0]||'', life = a[8]?.[0]||'', acc = a[9]?.[0]||'';
+    const conditions = a[10]||[], med = a[11]?.[0]||'', job = a[12]?.[0]||'';
+    const retireY = a[13]?.[0]||'', retireF = a[14]?.[0]||'', budget = a[15]?.[0]||'';
+
+    let s1=0,r1='';
+    if (social==='无') { s1+=50; r1='无社保'; }
+    else if (social==='居民医保') { s1+=20; r1='仅居民医保，待遇较低'; }
+    if (!has(medi)||medi!=='有医疗') { s1+=30; r1+=(r1?'、':'')+'无商业医疗险'; }
+    if (['40-55','o50'].includes(age)) { s1+=15; r1+=(r1?'、':'')+'年龄较大'; }
+    if (conditions.some(v=>['三高','结节','既往'].includes(v))) { s1+=20; r1+=(r1?'、':'')+'有健康异常'; }
+
+    let s2=0,r2='';
+    if (!has(crit)||crit==='无重疾') { s2+=40; r2='无重疾险保障'; }
+    else if (crit==='有重疾低') { s2+=15; r2='重疾险保额偏低'; }
+    if (pillar==='yes') { s2+=30; r2+=(r2?'、':'')+'家庭支柱'; }
+    if (['40-55','o50'].includes(age)) { s2+=20; r2+=(r2?'、':'')+'收入中断风险大'; }
+
+    let s3=20,r3='基础意外风险';
+    if (job==='中风险') { s3=55; r3='经常外出/驾车，风险中等'; }
+    if (job==='高风险') { s3=80; r3='高风险职业，需专门产品'; }
+    if (!has(acc)||acc!=='有意外') { s3+=15; }
+
+    let s4=0,r4='';
+    if (['房贷高','房贷低','其他负债'].includes(housing)) { s4+=35; r4='有负债'; }
+    if (dep!=='无') { s4+=30; r4+=(r4?'、':'')+'有抚养/赡养责任'; }
+    if (pillar==='yes') { s4+=25; r4+=(r4?'、':'')+'家庭支柱'; }
+    if (!has(life)||life==='无寿险') { s4+=15; r4+=(r4?'、':'')+'无寿险保障'; }
+
+    let s5=0,r5='';
+    if (retireY==='5年内/已退休') { s5=75; r5='临近或已退休'; }
+    else if (retireY==='5-10年') { s5=45; r5='养老规划需启动'; }
+    if (retireF==='无') { s5+=20; r5+=(r5?'、':'')+'养老储备不足'; }
+
+    let s6=0,r6='';
+    if (age==='o50') { s6+=40; r6='年龄较大'; }
+    if (conditions.some(v=>['三高','既往'].includes(v))) { s6+=25; r6+=(r6?'、':'')+'慢性病增加护理风险'; }
+    if (retireF==='无') { s6+=20; r6+=(r6?'、':'')+'无专项储备'; }
+
+    const risks = [
+      {n:'① 健康医疗风险',s:s1,r:r1||'风险较低'},
+      {n:'② 大病收入风险',s:s2,r:r2||'风险较低'},
+      {n:'③ 意外风险',s:s3,r:r3},
+      {n:'④ 家庭责任风险',s:s4,r:r4||'责任较轻'},
+      {n:'⑤ 养老风险',s:s5,r:r5||'规划较完善'},
+      {n:'⑥ 护理风险',s:s6,r:r6||'护理风险较低'},
+    ];
+    risks.forEach(r => {
+      if (r.s>=60) {r.l='高';r.cls='ri-h';}
+      else if (r.s>=30) {r.l='中';r.cls='ri-m';}
+      else {r.l='低';r.cls='ri-l';}
+    });
+
+    const gaps = [], gapSteps = [];
+    if (social==='无') { gaps.push({l:'无社保',c:'g-p0'}); gapSteps.push('补缴社保/居民医保（地基，最优先）'); }
+    if (!has(medi)||medi!=='有医疗') { gaps.push({l:'医疗险',c:'g-p1'}); gapSteps.push('医疗险（杠杆最高，优先补齐）'); }
+    if (!has(crit)||crit==='无重疾') { gaps.push({l:'重疾险',c:'g-p1'}); gapSteps.push(age==='o50'?'重疾险（注意保费倒挂，优先考虑防癌险）':'重疾险（弥补收入中断）'); }
+    if (dep!=='无'&&(!has(life)||life==='无寿险')) { gaps.push({l:'定期寿险',c:'g-p2'}); gapSteps.push('定期寿险（覆盖家庭责任）'); }
+    if (!has(acc)||acc!=='有意外') { gaps.push({l:'意外险',c:'g-p2'}); gapSteps.push('意外险（全员推荐，便宜实用）'); }
+
+    const recs = [];
+    if (!has(medi)||medi!=='有医疗') recs.push({name:'医疗险',prio:'P1（最高优先级）',desc:'报销住院医疗费用，几百元可保百万，适合作为保障地基。',reason:'无商业医疗险，是保障最薄弱的环节'});
+    if (!has(crit)||crit==='无重疾') {
+      if (age==='o50') recs.push({name:'防癌险（备选）',prio:'P2（可选）',desc:'50岁后投保重疾险可能出现保费倒挂，防癌险针对性更强、核保较宽松。',reason:'年龄较大，重疾险性价比下降，癌症占重疾赔付约70%'});
+      else recs.push({name:'重疾险',prio:'P2（重要）',desc:'确诊重疾一次性给付，用于治疗、康复及弥补收入损失。',reason:'无重疾险 + 家庭支柱 → 收入中断风险大'});
+    }
+    if (dep!=='无'&&(!has(life)||life==='无寿险')) recs.push({name:'定期寿险',prio:'P3（针对责任）',desc:'身故/全残一次性赔付，覆盖房贷、子女教育、父母赡养。',reason:'有负债或抚养责任，身故风险直接影响家庭财务'});
+    if (!has(acc)||acc!=='有意外') recs.push({name:'意外险',prio:'P4（全员推荐）',desc:'保费低（百元级）、杠杆高，覆盖意外身故/伤残/医疗。',reason:'保费便宜，保障实在，建议人手一份'});
+    if (['5-10年','5年内/已退休'].includes(retireY)) recs.push({name:'养老年金/增额寿',prio:'P5（有余力）',desc:'锁定利率，强制储蓄，为养老储备现金流。',reason:'养老储备紧迫，建议基础保障配齐后考虑'});
+
+    const incMap = {'10万以下':10,'10-20万':15,'20-40万':30,'40万以上':50};
+    const annInc = incMap[income]||20;
+    const maxP = Math.round(annInc*0.15*10000), minP = Math.round(annInc*0.05*10000);
+    const mediE = (!has(medi)||medi!=='有医疗')?'300–800元':'已持有';
+    const critE = (!has(crit)||crit==='无重疾')?'2,000–6,000元':'已持有';
+    const lifeE = (!has(life)||life==='无寿险')?'300–1,500元':'已持有';
+    const accE = (!has(acc)||acc!=='有意外')?'100–300元':'已持有';
+
+    const warns = [];
+    if (conditions.some(v=>['三高','结节','既往'].includes(v))) warns.push({t:'⚠️ 健康异常提示',p:'您提到的健康情况需要如实告知，投保时可能会有核保结论（标保/加费/除外/拒保），建议多家同时投保选择最优结果。',red:false});
+    if (budget==='3千以内') warns.push({t:'💰 预算约束提示',p:'您的预算有限，建议优先配齐医疗险+意外险（约400–1,100元），重疾险和寿险在余力充足后再补充。',red:false});
+    if (age==='o50'&&(!has(crit)||crit==='无重疾')) warns.push({t:'📌 50岁+ 重疾险提示',p:'50岁后投保重疾险可能出现保费倒挂（累计交费 > 保额）。建议优先医疗险+防癌险，重疾险需仔细比较费率后再决定。',red:false});
+    if (social==='无') warns.push({t:'🔴 紧急：建议先补社保',p:'没有社保的情况下，商业医疗险的报销比例和范围都会受限，保费也更高。建议先到当地社保局参保，再补充商业险。',red:true});
+
+    const highCnt = risks.filter(r=>r.l==='高').length;
+    let badgeTxt, badgeBg;
+    if (highCnt>=4) { badgeTxt='🔴 风险较高，建议尽快完善保障'; badgeBg='rgba(220,38,38,0.3)'; }
+    else if (highCnt>=2) { badgeTxt='🟡 风险中等，建议查漏补缺'; badgeBg='rgba(217,119,6,0.3)'; }
+    else { badgeTxt='🟢 风险较低，保障基础良好'; badgeBg='rgba(22,163,74,0.3)'; }
+
+    // 渲染
+    document.getElementById('r-badge').textContent = badgeTxt;
+    document.getElementById('r-badge').style.background = badgeBg;
+    document.getElementById('risk-list').innerHTML = risks.map(r=>`
+      <div class="risk-item ${r.cls}">
+        <div class="ri-top"><span class="ri-name">${r.n}</span><span class="ri-lvl ${r.cls}">${r.l}</span></div>
+        <div class="bar-bg"><div class="bar-fill ${r.cls}" style="width:${r.s}%"></div></div>
+        <div class="ri-reason">${r.r}</div>
+      </div>`).join('');
+    document.getElementById('gap-tags').innerHTML = gaps.map(g=>`<span class="gtag ${g.c}">${g.l}</span>`).join('');
+    document.getElementById('gap-order').innerHTML = gapSteps.map((t,i)=>`<div class="gap-step"><span class="g-num">${i+1}</span><span class="g-text">${t}</span></div>`).join('');
+    document.getElementById('rec-list').innerHTML = recs.map(r=>`
+      <div class="rec-card"><div class="rc-top"><span class="rc-name">${r.name}</span><span class="rc-prio">${r.prio}</span></div><div class="rc-desc">${r.desc}</div><div class="rc-reason">建议理由：${r.reason}</div></div>`).join('');
+    document.getElementById('pbox').innerHTML = `
+      <div class="prow"><span class="plbl">医疗险（百万/中端）</span><span class="pval">${mediE}</span></div>
+      <div class="prow"><span class="plbl">重疾险</span><span class="pval">${critE}</span></div>
+      <div class="prow"><span class="plbl">定期寿险</span><span class="pval">${lifeE}</span></div>
+      <div class="prow"><span class="plbl">意外险</span><span class="pval">${accE}</span></div>
+      <div class="prow tot"><span class="plbl">建议年保费区间</span><span class="pval big">${minP.toLocaleString()}–${maxP.toLocaleString()}元</span></div>
+      <div class="ptip">💡 保障类保费建议控制在年收入 5%–15%；"已持有"表示您已有该类保障</div>`;
+    document.getElementById('warn-list').innerHTML = warns.map(w=>`<div class="warn-box${w.red?' red':''}" style="margin-top:10px"><h4>${w.t}</h4><p>${w.p}</p></div>`).join('');
+
+    // 代理人品牌
+    const bf = document.getElementById('brand-foot');
+    if (CFG.agent!=='昆仑健康保险' || CFG.phone) {
+      bf.innerHTML = `本评估报告由 <strong>${CFG.agent}</strong> 提供` + (CFG.phone? ` · 咨询 ${CFG.phone}`:'');
+    } else { bf.innerHTML = ''; }
+
+    App.show('p-report');
+  },
+
+  // ---- 联系卡片 ----
+  fmtPhone(p){ return p.replace(/(\d{3})(\d{4})(\d{4})/, '$1 $2 $3'); },
+  consult() {
+    const c = CFG;
+    let html = `<div class="modal-title">预约人工顾问</div>
+      <div class="modal-sub">${c.agent? c.agent+' · ':''}专业方案定制 · 核保评估 · 投保指导</div>`;
+    if (c.phone) {
+      html += `<div class="contact-box"><div class="contact-lbl">顾问手机号</div><div class="contact-val">${App.fmtPhone(c.phone)}</div></div>
+        <a class="modal-btn modal-call" href="tel:${c.phone}">📞 直接拨打</a>
+        <button class="modal-btn modal-copy" onclick="App.copyPhone()">📋 复制手机号</button>`;
+    }
+    if (c.wechat) {
+      html += `<button class="modal-btn modal-wechat" onclick="App.copyWechat()">💬 复制微信号</button>`;
+    }
+    html += `<button class="modal-close" onclick="App.closeModal()">关闭</button>`;
+    document.getElementById('contact-body').innerHTML = html;
+    document.getElementById('contact-modal').classList.add('show');
+  },
+  closeModal() { document.getElementById('contact-modal').classList.remove('show'); },
+  copyPhone() { App.doCopy(CFG.phone, '已复制手机号：' + CFG.phone); },
+  copyWechat() { App.doCopy(CFG.wechat, '已复制微信号：' + CFG.wechat); },
+  doCopy(text, okMsg) {
+    const done = () => App.toast(okMsg);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => App.fbCopy(text, done));
+    } else { App.fbCopy(text, done); }
+  },
+  fbCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.top='-999px'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e) { App.toast('复制失败，请手动复制：' + text); }
+    document.body.removeChild(ta);
+  },
+  toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  },
+
+  // ---- 生成专属链接 ----
+  openGen() {
+    document.getElementById('g-agent').value = CFG.agent!=='昆仑健康保险' ? CFG.agent : '';
+    document.getElementById('g-phone').value = CFG.phone || '';
+    document.getElementById('g-wechat').value = CFG.wechat || '';
+    document.getElementById('g-result-wrap').style.display = 'none';
+    document.getElementById('gen-modal').classList.add('show');
+  },
+  closeGen() { document.getElementById('gen-modal').classList.remove('show'); },
+  genLink() {
+    const agent = document.getElementById('g-agent').value.trim();
+    const phone = document.getElementById('g-phone').value.trim();
+    const wechat = document.getElementById('g-wechat').value.trim();
+    if (!phone && !wechat) { App.toast('请至少填写手机号或微信号'); return; }
+    const base = location.origin + location.pathname;
+    const params = new URLSearchParams();
+    if (agent) params.set('agent', agent);
+    if (phone) params.set('phone', phone);
+    if (wechat) params.set('wechat', wechat);
+    const link = base + '?' + params.toString();
+    document.getElementById('g-result').value = link;
+    document.getElementById('g-result-wrap').style.display = 'block';
+  },
+  copyLink() {
+    const link = document.getElementById('g-result').value;
+    App.doCopy(link, '专属链接已复制，去发给客户吧');
+  },
+
+  reset() { S.step=0; S.sel={}; App.show('p-welcome'); },
+  about() { alert('保险体检报告 v1.0\n\n帮助普通人客观评估自身风险缺口\n先看清风险，再决定买什么\n\n本工具不卖保险，不推销产品\n评估结果仅供参考，不构成投保建议\n\n© 昆仑健康保险'); },
+
+  show(id) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  },
+};
+</script>
+</body>
+</html>
